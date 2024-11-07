@@ -16,7 +16,8 @@ def clear():
     else:
         _ = os.system('clear')
 
-def Options(analyzer):
+def Options(args):
+    analyzer = Analyzer(args.datacaptured)
     while 1:
         print("\n\n=======================================")
         print("Welcome to Fortinet Analyzer Log Viewer\n")
@@ -25,8 +26,10 @@ def Options(analyzer):
         print("3. Set Source IP Address")
         print("4. Set Destination IP Address")
         print("5. Set Destination Port")
-        print("6. Extract Output Data")
-        print("7. Exit")
+        print("6. Set Source Port")
+        print("7. Print Current Filter")
+        print("8. Extract Output Data")
+        print("9. Exit")
         try:
             option = int(input("Choose an option: "))
             if option == 1:
@@ -41,27 +44,31 @@ def Options(analyzer):
                 analyzer.SetSrcIPAddress()
             elif option == 4:
                 clear()
-                ip_addr = input("Set your desired destionation ip address:>> ")
-                analyzer.SetDstIPAddress(ip_addr)
+                analyzer.SetDstIPAddress()
             elif option == 5:
                 clear()
-                port = input("Set your desired destination port:>> ")
-                analyzer.SetDstPort(port)
+                analyzer.SetDstPort()
             elif option == 6:
                 clear()
-                analyzer.ExportData()
+                analyzer.SetSrcPort()
             elif option == 7:
+                clear()
+                analyzer.PrintCurrentFilter()
+            elif option == 8:
+                clear()
+                analyzer.ExportData()
+            elif option == 9:
                 print("Goodbye!")
                 return
             else:
                 print("Invalid option")
-        except:
+        except Exception as e:
             clear()
-            print("only take argument from 1 to 5")
+            print(e)
+            print("only take argument from 1 to 9")
             pass
 
 if __name__ == '__main__':
     args = Init()
-    analyzer = Analyzer(args.datacaptured)
-    Options(analyzer)
+    Options(args)
     

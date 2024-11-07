@@ -8,7 +8,7 @@ ADD MULTIPLE IN/OUT PORT FILTERING #DONE
 ADD MULTIPLE IN/OUT IP FILTERING #DONE
 ADD EXCLUDED PORT #DONE
 ADD EXCLUDED IP #DONE
-ADD SPECIFIC HEADER OUTPUT
+ADD SPECIFIC HEADER OUTPUT #DONE
 ADD SORT BY HEADER
 ADD VERIFIER IF FOR IP AND PORT FORMAT (xxx.xxx.xxx.xxx), 1-65535
 DEBUG
@@ -25,6 +25,7 @@ class Analyzer:
         self.exclude_dst_port = []
         self.exclude_src_ip = []
         self.exclude_dst_ip = []
+        self.output_cols = []
         self.info = lambda x,y: print('\033[32m'+f'{x:<20}'+'\033[0m', end=y)
         self.alert = lambda x,y: print('\033[31m'+f'{x}'+'\033[0m', end=y)
         self.pressenterinput = lambda : input('\033[33m'+"Press Enter to Continue"+'\033[0m')
@@ -66,6 +67,17 @@ class Analyzer:
         if len(self.headers) % 3 != 0:
             print()
 
+    def SetOutputHeaders(self):
+        try:
+            self.GetHeaders()
+            print("List All Headers with comma sperator; ex(1,2,3)")
+            headers = input(":>>>> ")
+            headers = headers.split(",")
+            self.output_cols = [self.headers[int(i) - 1] for i in headers]
+            return True
+        except Exception as e:
+            self.HandleException("Error while setting output headers with error:", e)
+            return False
 
     def SetSrcIPAddress(self):
         try:
@@ -125,6 +137,10 @@ class Analyzer:
 
     def ExportData(self):
         try:
+            opt = input("Do you want to set spesific header output? (y/n): ")
+            if opt == 'y':
+                if(not self.SetOutputHeaders()):
+                    raise Exception("Error while setting output")
             data = self.GetFinalData()
             if data.empty:
                 raise Exception("No Data Found", '\n')
@@ -144,6 +160,14 @@ class Analyzer:
     def GetFinalData(self):
         try:
             output = self.datacaptured.copy()
+            if(self.exclude_dst_ip != []):
+                output = output[~output['dst_ip'].isin(self.exclude_dst_ip)]
+            if(self.exclude_src_ip != []):
+                output = output[~output['src_ip'].isin(self.exclude_src_ip)]
+            if(self.exclude_dst_port != []):
+                output = output[~output['dst_port'].isin(self.exclude_dst_port)]
+            if(self.exclude_src_port != []):
+                output = output[~output['src_port'].isin(self.exclude_src_port)]
             if(self.src_ip != []):
                 output = output[output['src_ip'].isin(self.src_ip)]
             if(self.dst_ip != []):
@@ -152,6 +176,8 @@ class Analyzer:
                 output = output[output['dst_port'].isin(self.dst_port)]
             if(self.src_port != []):
                 output = output[output['src_port'].isin(self.src_port)]
+            if(self.output_cols != []):
+                output = output[self.output_cols]
             return output
         except Exception as e:
             self.HandleException("Error while getting final data with error:", e)
@@ -178,7 +204,7 @@ class Analyzer:
         except Exception as e:
             self.HandleException("Error while printing current filter with error:", e)
 
-    def ExcludePort(self):
+    def ExcludeDstPort(self):
         try:
             print("List All port with comma separator; ex(21,80,443)")
             port = input(":>>>> ")
@@ -188,12 +214,33 @@ class Analyzer:
         except Exception as e:
             self.HandleException("Error while excluding port with error:", e)
     
-    def ExcludeIP(self):
+    def ExcludeSrcPort(self):
+        try:
+            print("List All port with comma separator; ex(21,80,443)")
+            port = input(":>>>> ")
+            port = port.split(",")
+            self.exclude_src_port = port
+            self.info(f"excluded Port Has Been Set to {self.exclude_src_port}", '\n')
+        except Exception as e:
+            self.HandleException("Error while excluding port with error:", e)
+    
+    def ExcludeDstIP(self):
         try:
             print("List All IP Addresses with comma sperator; ex(1.1.1.1,2.2.2.2,4.4.4.4)")
             ip_addresses = input(":>>>> ")
             ip_addresses = ip_addresses.split(",")
             self.exclude_dst_ip = ip_addresses
+            self.info(f"excluded IP Has Been Set to {self.exclude_dst_ip}", '\n')
+        except Exception as e:
+            self.HandleException("Error while excluding ip  with error:", e)
+    
+    def ExcludeSrcIP(self):
+        try:
+            print("List All IP Addresses with comma sperator; ex(1.1.1.1,2.2.2.2,4.4.4.4)")
+            ip_addresses = input(":>>>> ")
+            ip_addresses = ip_addresses.split(",")
+            self.exclude_src_ip = ip_addresses
+            self.info(f"excluded IP Has Been Set to {self.exclude_src_ip}", '\n')
         except Exception as e:
             self.HandleException("Error while excluding ip  with error:", e)
 
@@ -207,6 +254,7 @@ class Analyzer:
         self.exclude_src_port = []
         self.exclude_dst_ip = []
         self.exclude_src_ip = []
+        self.output_cols = []
         self.clear()
         self.info("Filter has been reset", '\n')
         self.pressenterinput()

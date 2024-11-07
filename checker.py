@@ -28,8 +28,9 @@ def Options(args):
         print("5. Set Destination Port")
         print("6. Set Source Port")
         print("7. Print Current Filter")
-        print("8. Extract Output Data")
-        print("9. Exit")
+        print("8. Reset Filter")
+        print("9. Extract Output Data")
+        print("10. Exit")
         try:
             option = int(input("Choose an option: "))
             if option == 1:
@@ -56,8 +57,11 @@ def Options(args):
                 analyzer.PrintCurrentFilter()
             elif option == 8:
                 clear()
-                analyzer.ExportData()
+                analyzer.ResetFilter()
             elif option == 9:
+                clear()
+                analyzer.ExportData()
+            elif option == 10:
                 print("Goodbye!")
                 return
             else:
@@ -65,7 +69,7 @@ def Options(args):
         except Exception as e:
             clear()
             print(e)
-            print("only take argument from 1 to 9")
+            print("only take argument from 1 to 10")
             pass
 
 if __name__ == '__main__':

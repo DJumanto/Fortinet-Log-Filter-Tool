@@ -9,7 +9,7 @@ ADD MULTIPLE IN/OUT IP FILTERING #DONE
 ADD EXCLUDED PORT #DONE
 ADD EXCLUDED IP #DONE
 ADD SPECIFIC HEADER OUTPUT #DONE
-ADD VERIFIER IF FOR IP AND PORT FORMAT (xxx.xxx.xxx.xxx), 1-65535
+ADD VERIFIER IF FOR IP AND PORT FORMAT (xxx.xxx.xxx.xxx), 1-65535 #Done
 DEBUG
 '''
 class Analyzer:
@@ -83,6 +83,10 @@ class Analyzer:
             print("List All IP Addresses with comma sperator; ex(1.1.1.1,2.2.2.2,3.3.3.3)")
             ip_addresses = input(":>>>> ")
             ip_addresses = ip_addresses.split(",")
+            fmt = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+            for i in ip_addresses:
+                if not fmt.match(i):
+                    raise Exception("Invalid IP Address Format")
             spec_ip = self.datacaptured[self.datacaptured['src_ip'].isin(ip_addresses)]
             if(len(spec_ip)):
                 self.src_ip = ip_addresses
@@ -97,6 +101,10 @@ class Analyzer:
             print("List All IP Addresses with comma sperator; ex(1.1.1.1,2.2.2.2,3.3.3.3)")
             ip_addresses = input(":>>>> ")
             ip_addresses = ip_addresses.split(",")
+            fmt = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+            for i in ip_addresses:
+                if not fmt.match(i):
+                    raise Exception("Invalid IP Address Format")
             spec_ip = self.datacaptured[self.datacaptured['dst_ip'].isin(ip_addresses)]
             if(len(spec_ip)):
                 self.dst_ip = ip_addresses
@@ -111,6 +119,9 @@ class Analyzer:
             print("List All port with comma separator; ex(21,80,443)")
             port = input(":>>>> ")
             port = port.split(",")
+            int_port = int(port)
+            if int_port < 1 or int_port > 65535:
+                raise Exception("Invalid Port Number")
             spec_port = self.datacaptured[self.datacaptured['dst_port'].isin(port)]
             if(len(spec_port)):
                 self.dst_port = port
@@ -125,6 +136,9 @@ class Analyzer:
             print("List All port with comma separator; ex(21,80,443)")
             port = input(":>>>> ")
             port = port.split(",")
+            int_port = int(port)
+            if int_port < 1 or int_port > 65535:
+                raise Exception("Invalid Port Number")
             spec_port = self.datacaptured[self.datacaptured['src_port'].isin(port)]
             if(len(spec_port)):
                 self.src_port = port
@@ -208,6 +222,9 @@ class Analyzer:
             print("List All port with comma separator; ex(21,80,443)")
             port = input(":>>>> ")
             port = port.split(",")
+            int_port = int(port)
+            if int_port < 1 or int_port > 65535:
+                raise Exception("Invalid Port Number")
             self.exclude_dst_port = port
             self.info(f"excluded Port Has Been Set to {self.exclude_dst_port}", '\n')
         except Exception as e:
@@ -218,6 +235,9 @@ class Analyzer:
             print("List All port with comma separator; ex(21,80,443)")
             port = input(":>>>> ")
             port = port.split(",")
+            int_port = int(port)
+            if int_port < 1 or int_port > 65535:
+                raise Exception("Invalid Port Number")
             self.exclude_src_port = port
             self.info(f"excluded Port Has Been Set to {self.exclude_src_port}", '\n')
         except Exception as e:
@@ -228,6 +248,10 @@ class Analyzer:
             print("List All IP Addresses with comma sperator; ex(1.1.1.1,2.2.2.2,4.4.4.4)")
             ip_addresses = input(":>>>> ")
             ip_addresses = ip_addresses.split(",")
+            fmt = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+            for i in ip_addresses:
+                if not fmt.match(i):
+                    raise Exception("Invalid IP Address Format")
             self.exclude_dst_ip = ip_addresses
             self.info(f"excluded IP Has Been Set to {self.exclude_dst_ip}", '\n')
         except Exception as e:
@@ -238,6 +262,10 @@ class Analyzer:
             print("List All IP Addresses with comma sperator; ex(1.1.1.1,2.2.2.2,4.4.4.4)")
             ip_addresses = input(":>>>> ")
             ip_addresses = ip_addresses.split(",")
+            fmt = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+            for i in ip_addresses:
+                if not fmt.match(i):
+                    raise Exception("Invalid IP Address Format")
             self.exclude_src_ip = ip_addresses
             self.info(f"excluded IP Has Been Set to {self.exclude_src_ip}", '\n')
         except Exception as e:

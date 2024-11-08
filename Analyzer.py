@@ -2,14 +2,13 @@ import pandas as pd
 import re
 import datetime
 import os
+import numpy as np
 '''
-TODO
-ADD MULTIPLE IN/OUT PORT FILTERING #DONE
-ADD MULTIPLE IN/OUT IP FILTERING #DONE
-ADD EXCLUDED PORT #DONE
-ADD EXCLUDED IP #DONE
-ADD SPECIFIC HEADER OUTPUT #DONE
-ADD VERIFIER IF FOR IP AND PORT FORMAT (xxx.xxx.xxx.xxx), 1-65535 #Done
+TODO 2 : feature for real time analyze
+ADD Most Occuring IP Address in / out (include within time range)
+ADD Most Occuring Port Destination Address (include within time range) 
+ADD Biggest Data Transfer (include within time range)
+ADD Most Occuring Protocol (include within time range)
 DEBUG
 '''
 class Analyzer:
@@ -53,6 +52,13 @@ class Analyzer:
                         self.datacaptured.at[i, j] = self.datacaptured.at[i, j].split('=')[1] if '=' in self.datacaptured.at[i, j] else self.datacaptured.at[i, j]
                         self.datacaptured.at[i, j] = self.datacaptured.at[i,j].replace("\"","")
             self.datacaptured['data_timestamp'] = pd.to_datetime(self.datacaptured['data_timestamp'], errors='coerce')
+            self.datacaptured['net_sentbytes'] = pd.to_numeric(self.datacaptured['net_sentbytes'], errors='coerce').astype('float64')
+            self.datacaptured['net_sentpkts'] = pd.to_numeric(self.datacaptured['net_sentpkts'], errors='coerce').astype('float64')
+            self.datacaptured['net_sessionduration'] = pd.to_numeric(self.datacaptured['net_sessionduration'], errors='coerce').astype('float64')
+            self.datacaptured['net_sentbytes'] = pd.to_numeric(self.datacaptured['net_sentbytes'], errors='coerce').astype('float64')
+            self.datacaptured['net_sentpkts'] = pd.to_numeric(self.datacaptured['net_sentpkts'], errors='coerce').astype('float64')
+            self.datacaptured['net_sessionduration'] = pd.to_numeric(self.datacaptured['net_sessionduration'], errors='coerce').astype('float64')
+
         except Exception as e:
             self.HandleException("Error while cleaning data with error:", e)
     
@@ -73,6 +79,8 @@ class Analyzer:
             headers = input(":>>>> ")
             headers = headers.split(",")
             self.output_cols = [self.headers[int(i) - 1] for i in headers]
+            self.output_cols = sorted(self.output_cols)
+            self.info(f"Output Headers Has Been Set to {self.output_cols}", '\n')
             return True
         except Exception as e:
             self.HandleException("Error while setting output headers with error:", e)
@@ -117,14 +125,15 @@ class Analyzer:
     def SetDstPort(self):
         try:
             print("List All port with comma separator; ex(21,80,443)")
-            port = input(":>>>> ")
-            port = port.split(",")
-            int_port = int(port)
-            if int_port < 1 or int_port > 65535:
-                raise Exception("Invalid Port Number")
-            spec_port = self.datacaptured[self.datacaptured['dst_port'].isin(port)]
+            ports = input(":>>>> ")
+            ports = ports.split(",")
+            for port in ports:
+                int_port = int(port)
+                if int_port < 1 or int_port > 65535:
+                    raise Exception("Invalid Port Number")
+            spec_port = self.datacaptured[self.datacaptured['dst_port'].isin(ports)]
             if(len(spec_port)):
-                self.dst_port = port
+                self.dst_port = ports
                 self.info(f"Destination Port Has Been Set to {self.dst_port}", '\n')
             else:
                 raise Exception("Such Destination Port Not Found", '\n')
@@ -150,10 +159,12 @@ class Analyzer:
 
     def ExportData(self):
         try:
-            opt = input("Do you want to set spesific header output? (y/n): ")
-            if opt == 'y':
-                if(not self.SetOutputHeaders()):
-                    raise Exception("Error while setting output")
+            if(self.output_cols == []):
+                opt = input("You haven't set spesific header output\n\
+                            Do you want to set spesific header output? (y/n): ")
+                if opt == 'y':
+                    if(not self.SetOutputHeaders()):
+                        raise Exception("Error while setting header output")
             data = self.GetFinalData()
             if data.empty:
                 raise Exception("No Data Found", '\n')
@@ -161,6 +172,9 @@ class Analyzer:
                 current_date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                 opt = input("Do you want to export as CSV? (y/n): ")
                 self.info("Here're the data you have filtered: ", '\n')
+                if not os.path.exists('output'):
+                    os.makedirs('output')
+                    self.info(f"Directory output created", '')
                 if opt == 'y':
                     data.to_csv(f'output/filtered_data_{current_date}.csv', index=False)
                 else:
@@ -214,6 +228,39 @@ class Analyzer:
                 self.info("Destination Port:", "\n")
                 for i in self.dst_port:
                     self.info(f"\t{i}", "\n")
+            if len(self.exclude_src_ip):
+                self.info("Excluded Source IP Address:", "\n")
+                for i in self.exclude_src_ip:
+                    self.info(f"\t{i}", "\n")
+            if len(self.exclude_dst_ip):
+                self.info("Excluded Destination IP Address:", "\n")
+                for i in self.exclude_dst_ip:
+                    self.info(f"\t{i}", "\n")
+            if len(self.exclude_src_port):
+                self.info("Excluded Source Port:", "\n")
+                for i in self.exclude_src_port:
+                    self.info(f"\t{i}", "\n")
+            if len(self.exclude_dst_port):
+                self.info("Excluded Destination Port:", "\n")
+                for i in self.exclude_dst_port:
+                    self.info(f"\t{i}", "\n")
+            if len(self.output_cols):   
+                self.info("Output Headers:", "\n")
+                for index in self.output_cols:
+                    if index < len(self.datacaptured.columns):
+                        col_name = self.datacaptured.columns[index]
+                        self.info(f"\t{col_name}", "\n")
+
+            currOutput = self.GetFinalData()
+            total_row = currOutput.shape[0]
+            if total_row == 0:
+                self.alert("No data found based on current filter", '\n')
+                opt = input("Do you want to reset the filter? (y/n): ")
+                if opt == 'y':
+                    self.ResetFilter()
+            else:
+                self.info(f"Total Row: {total_row}", '\n')
+                self.pressenterinput()
         except Exception as e:
             self.HandleException("Error while printing current filter with error:", e)
 
@@ -271,7 +318,37 @@ class Analyzer:
         except Exception as e:
             self.HandleException("Error while excluding ip  with error:", e)
 
-    
+    def PacketStatistics(self):
+        try:
+            self.info("Calculating Packet Statistics...", '\n')
+        
+            maxBytesSend    = self.datacaptured['net_sentbytes'].max()
+            maxPacketSend   = self.datacaptured['net_sentpkts'].max()
+            maxSessionDur   = self.datacaptured['net_sessionduration'].max()
+            
+            stats = [
+                ("Packet With Max Bytes Sent", maxBytesSend, self.datacaptured[self.datacaptured['net_sentbytes'] == maxBytesSend]),
+                ("Packet With Max Packets Sent", maxPacketSend, self.datacaptured[self.datacaptured['net_sentpkts'] == maxPacketSend]),
+                ("Packet With Max Session Duration", maxSessionDur, self.datacaptured[self.datacaptured['net_sessionduration'] == maxSessionDur])
+            ]
+            
+            for stat_name, stat_value, rows in stats:
+                self.info(f"{stat_name} ({stat_value}):", "\n")
+                for _, row in rows.iterrows():
+                    self.info(f"src_ip: {row['src_ip']}", "\n")
+                    self.info(f"src_port: {row['src_port']}", "\n")
+                    self.info(f"dst_ip: {row['dst_ip']}", "\n")
+                    self.info(f"dst_port: {row['dst_port']}", "\n")
+                    self.info(f"app_service: {row['app_service']}", "\n")
+                    self.alert(f"event_severity: {row['event_severity']}", "\n")
+                    self.alert(f"event_action: {row['event_action']}", "\n")
+                    self.info(f"net_sentbytes: {row['net_sentbytes']}", "\n")
+                    self.info(f"net_sentpkts: {row['net_sentpkts']}", "\n")
+                    self.info(f"net_sessionduration: {row['net_sessionduration']}", "\n\n")
+            self.pressenterinput()
+        except Exception as e:
+            self.HandleException("Error while finding highest packet transfer with error:", e)
+
     def ResetFilter(self):
         self.src_ip = []
         self.dst_ip = []
